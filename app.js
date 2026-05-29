@@ -1,7 +1,7 @@
-// ================== app.js - ORÁCULO MÍSTICO (VERSIÓN FINAL OPTIMIZADA) ==================
-// Incluye: nuevas URLs de ImgBB, lazy loading, cartas invertidas, precarga limitada
+// ================== app.js - ORÁCULO MÍSTICO (MODAL + SIN TÍTULOS + INVERTIR EN MODAL) ==================
+// Incluye: nuevas URLs de ImgBB, lazy loading, tiradas en modal, toggle invertido dentro del modal
 
-// ========== MAPEO DE IMÁGENES A URLs DE ImgBB (últimas URLs proporcionadas) ==========
+// ========== MAPEO DE IMÁGENES A URLs DE ImgBB (últimas URLs) ==========
 const CARD_IMAGES = {
   // Arcanos Mayores (am00.png a am21.png)
   'am00.png': 'https://i.ibb.co/PsNfZbGj/am00.png',
@@ -92,24 +92,15 @@ const CARD_IMAGES = {
   'ameo14.png': 'https://i.ibb.co/zTvvphs9/ameo14.png'
 };
 
-// Función para obtener la URL de la imagen a partir del nombre del archivo
-function getCardImageUrl(fileName) {
-  return CARD_IMAGES[fileName] || '';
-}
-
-// imgObj adaptado para usar el mapeo local (ignora el segundo parámetro)
-function imgObj(fileName, _fallback) {
-  return getCardImageUrl(fileName);
-}
-
-// Obtiene el src de la imagen desde el objeto carta (puede ser string o {main, fallback})
+function getCardImageUrl(fileName) { return CARD_IMAGES[fileName] || ''; }
+function imgObj(fileName, _fallback) { return getCardImageUrl(fileName); }
 function getImgSrc(card) {
   if (typeof card.img === 'string') return card.img;
   if (card.img && typeof card.img.main === 'string') return card.img.main;
   return '';
 }
 
-// ========== ARCANOS MAYORES (22) con descripciones extensas (incluyen versión invertida) ==========
+// ========== ARCANOS MAYORES ==========
 const MAJOR_ARCANA = [
     { num:'0', name:'El Loco', emoji:'🃏', key:'Inicio, aventura, fe', img:imgObj('am00.png','ar00.jpg'), up:'El Loco representa el inicio de un viaje lleno de posibilidades. En amor: nuevas relaciones sin ataduras. Trabajo: proyectos innovadores. Salud: vitalidad renovada. Espiritualmente: confía en el universo.', rv:'Invertido: imprudencia, temor a lo nuevo. Evita riesgos necesarios. En amor: miedo al compromiso. Trabajo: acciones sin planificar. Salud: descuidos.', el:'Aire' },
     { num:'I', name:'El Mago', emoji:'🎩', key:'Voluntad, poder, manifestación', img:imgObj('am01.png','ar01.jpg'), up:'Tienes todas las herramientas para crear tu realidad. Amor: atracción magnética. Trabajo: éxito emprendedor. Salud: recuperación rápida.', rv:'Invertido: manipulación, falta de dirección. En amor: relaciones tóxicas. Trabajo: mal uso del poder.', el:'Mercurio' },
@@ -135,7 +126,7 @@ const MAJOR_ARCANA = [
     { num:'XXI', name:'El Mundo', emoji:'🌍', key:'Completud, éxito', img:imgObj('am21.png','ar21.jpg'), up:'Culminación. Amor: unión completa. Trabajo: meta alcanzada. Salud: plenitud.', rv:'Invertido: falta de cierre.', el:'Saturno' }
 ];
 
-// ========== ARCANOS MENORES (56) con nombres de archivo de dos dígitos ==========
+// ========== ARCANOS MENORES ==========
 const MINOR_FILENAMES = {
     wands: { 'As':'ameb01.png','2':'ameb02.png','3':'ameb03.png','4':'ameb04.png','5':'ameb05.png','6':'ameb06.png','7':'ameb07.png','8':'ameb08.png','9':'ameb09.png','10':'ameb10.png','Sota':'ameb11.png','Caballero':'ameb12.png','Reina':'ameb13.png','Rey':'ameb14.png' },
     cups: { 'As':'amec01.png','2':'amec02.png','3':'amec03.png','4':'amec04.png','5':'amec05.png','6':'amec06.png','7':'amec07.png','8':'amec08.png','9':'amec09.png','10':'amec10.png','Sota':'amec11.png','Caballero':'amec12.png','Reina':'amec13.png','Rey':'amec14.png' },
@@ -232,7 +223,7 @@ const MINOR_ARCANA = (() => {
 
 const ALL_TAROT = [...MAJOR_ARCANA, ...MINOR_ARCANA];
 
-// ========== RUNAS (24) ==========
+// ========== RUNAS ==========
 const RUNAS = [
     { sym:'ᚠ', name:'Fehu', img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Runic_letter_fehu_feoh_fe_f.svg/200px-Runic_letter_fehu_feoh_fe_f.svg.png', up:'Fehu: riqueza, prosperidad, abundancia material. Te invita a disfrutar de lo que has cosechado. En el amor: relaciones generosas. En el trabajo: éxito económico. En salud: vitalidad. Espiritualmente: la abundancia fluye cuando compartes.', rv:'Invertida: pérdidas, mala gestión, egoísmo. Revisa tus finanzas y actitud hacia el dinero. En el amor: desequilibrio en dar y recibir.' },
     { sym:'ᚢ', name:'Uruz', img:'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Runic_letter_uruz_ur_u.svg/200px-Runic_letter_uruz_ur_u.svg.png', up:'Uruz: fuerza vital, salud, poder. Energía bruta para superar obstáculos. En amor: pasión intensa. Trabajo: determinación. Salud: recuperación. Espiritualmente: conectar con tu fuerza interior.', rv:'Invertida: debilidad, agotamiento, falta de motivación. Necesitas descansar y recuperar energías.' },
@@ -345,72 +336,118 @@ function cardHTML(card, opts = {}) {
     let revBadge = opts.reversed ? '<div class="rev-badge">INV</div>' : '';
     let src = getImgSrc(card);
     let onerror = 'this.onerror=null;this.style.display="none";this.nextElementSibling.style.display="flex";';
-    return `<div class="real-card ${opts.big ? 'big' : ''} ${revClass}" onclick="openCardModal(${JSON.stringify(card).replace(/"/g, '&quot;')}, ${!!opts.reversed})">${revBadge}<img src="${src}" loading="lazy" decoding="async" onerror="${onerror}"><div class="card-fallback" style="display:none">🃏<span class="fb-name">${card.name}</span></div><div class="card-name-label">${card.name}</div></div>`;
+    // Eliminado el card-name-label
+    return `<div class="real-card ${opts.big ? 'big' : ''} ${revClass}" onclick="openCardModal(${JSON.stringify(card).replace(/"/g, '&quot;')}, ${!!opts.reversed})">${revBadge}<img src="${src}" loading="lazy" decoding="async" onerror="${onerror}"><div class="card-fallback" style="display:none">🃏</div></div>`;
 }
 
 function runeCardHTML(r) {
     return `<div class="rune-card" onclick="openRunaModal(${JSON.stringify(r).replace(/"/g, '&quot;')})"><img src="${r.img}" loading="lazy" decoding="async" onerror="this.style.display='none'"><div class="rune-sym">${r.sym}</div><div class="rune-name">${r.name}</div></div>`;
 }
 
-window.openCardModal = function (card, rev) {
-    let text = rev ? (card.rv || card.up) : (card.up);
-    let modal = openModal(`
-        <h2 style="color:var(--gold)">${card.name} ${rev ? '(Invertida)' : ''}</h2>
-        <div>${cardHTML(card, { big: true, reversed: rev })}</div>
-        <div class="interp-card"><p>${text}</p></div>
-        <button class="btn-mystic btn-ia-modal" id="modalIaBtn">🔮 Consultar a la IA sobre esta carta</button>
-        <button class="btn-mystic btn-save" id="saveNoteBtn">💾 Guardar en Notas</button>
-    `);
-    document.getElementById('saveNoteBtn')?.addEventListener('click', () => { saveNote(`${card.name}: ${text}`); modal.remove(); });
-    document.getElementById('modalIaBtn')?.addEventListener('click', async () => {
-        const prompt = `Interpreta en profundidad la carta del tarot ${card.name} (${rev ? 'en posición invertida' : 'en posición derecha'}). Explica su simbolismo, su mensaje para el amor, el trabajo, la salud y el crecimiento espiritual. Extensión: 400 palabras.`;
-        document.getElementById('modalIaBtn').disabled = true;
-        document.getElementById('modalIaBtn').innerText = '🤖 Consultando...';
-        try {
-            await new Promise(r => { if (window.puter?.ai) r(); else setTimeout(r, 1500); });
-            let res = await puter.ai.chat(prompt, { model: 'gpt-4o-mini' });
-            let respuesta = typeof res === 'string' ? res : res.message?.content;
-            let iaDiv = document.createElement('div');
-            iaDiv.className = 'ia-interp';
-            iaDiv.innerHTML = `<h3>🤖 Interpretación de la IA</h3><p>${respuesta.replace(/\n/g, '<br>')}</p>`;
-            document.querySelector('.modal-box .interp-card').after(iaDiv);
-            speakText(respuesta);
-        } catch(e) { toast('Error al consultar la IA'); }
-        finally {
-            document.getElementById('modalIaBtn').disabled = false;
-            document.getElementById('modalIaBtn').innerText = '🔮 Consultar a la IA sobre esta carta';
+// Modal de carta mejorado con botón invertir
+window.openCardModal = function (card, rev = false) {
+    let currentRev = rev;
+    let modal = null;
+    let contentDiv = null;
+
+    function updateModal() {
+        let text = currentRev ? (card.rv || card.up) : card.up;
+        let imgHtml = cardHTML(card, { big: true, reversed: currentRev });
+        let buttonText = currentRev ? '↺ Volver a Derecha' : '🔄 Ver Invertida';
+        if (contentDiv) {
+            contentDiv.innerHTML = `
+                <h2 style="color:var(--gold)">${card.name} ${currentRev ? '(Invertida)' : ''}</h2>
+                <div>${imgHtml}</div>
+                <div class="interp-card"><p>${text}</p></div>
+                <div class="action-buttons" style="justify-content:center; gap:10px;">
+                    <button class="btn-mystic" id="toggleRevBtn">${buttonText}</button>
+                    <button class="btn-mystic btn-ia" id="modalIaBtn">🤖 IA</button>
+                    <button class="btn-mystic btn-save" id="saveNoteBtn">💾 Guardar</button>
+                </div>
+                <div id="modalIAResult"></div>
+            `;
+            // Reasignar eventos
+            document.getElementById('toggleRevBtn')?.addEventListener('click', () => {
+                currentRev = !currentRev;
+                updateModal();
+            });
+            document.getElementById('saveNoteBtn')?.addEventListener('click', () => {
+                saveNote(`${card.name}: ${currentRev ? card.rv : card.up}`);
+                if (modal) modal.remove();
+            });
+            document.getElementById('modalIaBtn')?.addEventListener('click', async () => {
+                const prompt = `Interpreta en profundidad la carta del tarot ${card.name} (${currentRev ? 'en posición invertida' : 'en posición derecha'}). Explica su simbolismo, su mensaje para el amor, el trabajo, la salud y el crecimiento espiritual. Extensión: 400 palabras.`;
+                const btn = document.getElementById('modalIaBtn');
+                btn.disabled = true;
+                btn.innerText = '🤖 Consultando...';
+                try {
+                    await new Promise(r => { if (window.puter?.ai) r(); else setTimeout(r, 1500); });
+                    let res = await puter.ai.chat(prompt, { model: 'gpt-4o-mini' });
+                    let respuesta = typeof res === 'string' ? res : res.message?.content;
+                    let iaDiv = document.getElementById('modalIAResult');
+                    iaDiv.innerHTML = `<div class="ia-interp"><h3>🤖 Interpretación de la IA</h3><p>${respuesta.replace(/\n/g, '<br>')}</p></div>`;
+                    speakText(respuesta);
+                } catch(e) { toast('Error al consultar la IA'); }
+                finally { btn.disabled = false; btn.innerText = '🤖 IA'; }
+            });
         }
-    });
+    }
+
+    modal = openModal('<div id="modalDynamicContent"></div>');
+    contentDiv = modal.querySelector('#modalDynamicContent');
+    updateModal();
 };
 
 window.openRunaModal = function (r, rev = false) {
-    let text = rev ? (r.rv || r.up) : r.up;
-    let modal = openModal(`
-        <h2 style="color:var(--gold)">${r.name} ${rev ? '(Inv.)' : ''}</h2>
-        <div>${runeCardHTML(r)}</div>
-        <div class="interp-card"><p>${text}</p></div>
-        <button class="btn-mystic btn-ia-modal" id="modalIaBtnRuna">🔮 Consultar a la IA sobre esta runa</button>
-        <button class="btn-mystic btn-save" onclick="saveNote('Runa ${r.name}: ${text.replace(/'/g, "\\'")}');modal.remove();">Guardar</button>
-    `);
-    document.getElementById('modalIaBtnRuna')?.addEventListener('click', async () => {
-        const prompt = `Interpreta en profundidad la runa ${r.name} (${rev ? 'invertida' : 'derecha'}). Explica su significado histórico, simbólico, y su mensaje para el amor, el trabajo, la salud y la espiritualidad. Extensión: 350 palabras.`;
-        document.getElementById('modalIaBtnRuna').disabled = true;
-        document.getElementById('modalIaBtnRuna').innerText = '🤖 Consultando...';
-        try {
-            await new Promise(r => { if (window.puter?.ai) r(); else setTimeout(r, 1500); });
-            let res = await puter.ai.chat(prompt, { model: 'gpt-4o-mini' });
-            let respuesta = typeof res === 'string' ? res : res.message?.content;
-            let iaDiv = document.createElement('div');
-            iaDiv.className = 'ia-interp';
-            iaDiv.innerHTML = `<h3>🤖 Interpretación de la IA</h3><p>${respuesta.replace(/\n/g, '<br>')}</p>`;
-            document.querySelector('.modal-box .interp-card').after(iaDiv);
-            speakText(respuesta);
-        } catch(e) { toast('Error al consultar la IA'); }
-        finally {
-            document.getElementById('modalIaBtnRuna').disabled = false;
-            document.getElementById('modalIaBtnRuna').innerText = '🔮 Consultar a la IA sobre esta runa';
+    let currentRev = rev;
+    let modal = null;
+    let contentDiv = null;
+
+    function updateModal() {
+        let text = currentRev ? (r.rv || r.up) : r.up;
+        let buttonText = currentRev ? '↺ Volver a Derecha' : '🔄 Ver Invertida';
+        let revStyle = currentRev ? 'transform:rotate(180deg);' : '';
+        if (contentDiv) {
+            contentDiv.innerHTML = `
+                <h2 style="color:var(--gold)">${r.name} ${currentRev ? '(Invertida)' : ''}</h2>
+                <div style="${revStyle}">${runeCardHTML(r)}</div>
+                <div class="interp-card"><p>${text}</p></div>
+                <div class="action-buttons" style="justify-content:center; gap:10px;">
+                    <button class="btn-mystic" id="toggleRevBtnRuna">${buttonText}</button>
+                    <button class="btn-mystic btn-ia" id="modalIaBtnRuna">🤖 IA</button>
+                    <button class="btn-mystic btn-save" id="saveNoteBtnRuna">💾 Guardar</button>
+                </div>
+                <div id="modalIAResultRuna"></div>
+            `;
+            document.getElementById('toggleRevBtnRuna')?.addEventListener('click', () => {
+                currentRev = !currentRev;
+                updateModal();
+            });
+            document.getElementById('saveNoteBtnRuna')?.addEventListener('click', () => {
+                saveNote(`Runa ${r.name}: ${currentRev ? r.rv : r.up}`);
+                if (modal) modal.remove();
+            });
+            document.getElementById('modalIaBtnRuna')?.addEventListener('click', async () => {
+                const prompt = `Interpreta en profundidad la runa ${r.name} (${currentRev ? 'invertida' : 'derecha'}). Explica su significado histórico, simbólico, y su mensaje para el amor, el trabajo, la salud y la espiritualidad. Extensión: 350 palabras.`;
+                const btn = document.getElementById('modalIaBtnRuna');
+                btn.disabled = true;
+                btn.innerText = '🤖 Consultando...';
+                try {
+                    await new Promise(r => { if (window.puter?.ai) r(); else setTimeout(r, 1500); });
+                    let res = await puter.ai.chat(prompt, { model: 'gpt-4o-mini' });
+                    let respuesta = typeof res === 'string' ? res : res.message?.content;
+                    let iaDiv = document.getElementById('modalIAResultRuna');
+                    iaDiv.innerHTML = `<div class="ia-interp"><h3>🤖 Interpretación de la IA</h3><p>${respuesta.replace(/\n/g, '<br>')}</p></div>`;
+                    speakText(respuesta);
+                } catch(e) { toast('Error al consultar la IA'); }
+                finally { btn.disabled = false; btn.innerText = '🤖 IA'; }
+            });
         }
-    });
+    }
+
+    modal = openModal('<div id="modalDynamicContentRuna"></div>');
+    contentDiv = modal.querySelector('#modalDynamicContentRuna');
+    updateModal();
 };
 
 function initMicrophones() {
@@ -642,42 +679,136 @@ async function getIA(type) {
     } catch (e) { container.innerHTML = `<div class="ia-interp">Error: ${e.message}</div>`; toast('Error de IA'); }
 }
 
-// ================== CARTA DEL DÍA, TAROT, RUNAS, TIRADAS ==================
-const DAILY_KEY = 'oraculo_daily';
-function getDailyData() { const raw = localStorage.getItem(DAILY_KEY); if (!raw) return null; const data = JSON.parse(raw); if (data.date !== new Date().toDateString()) return null; return data; }
-function saveDailyData(card, rev, runa, rrev) { localStorage.setItem(DAILY_KEY, JSON.stringify({ date: new Date().toDateString(), card, rev, runa, rrev })); }
-function checkDailyButton() { const btn = document.getElementById('dailyDrawBtn'); const data = getDailyData(); if (data) { btn.disabled = true; btn.textContent = '🔒 Ya has revelado tu carta hoy'; showDailyResult(data); } else { btn.disabled = false; btn.textContent = '🌟 Revelar Mi Carta y Runa del Día'; } }
-function showDailyResult(data) {
-    lastState.daily = data;
-    document.getElementById('dailyCardDisplay').innerHTML = `<div style="display:flex;gap:30px;justify-content:center;flex-wrap:wrap"><div>🃏 Tarot<br>${cardHTML(data.card,{big:true,reversed:data.rev})}</div><div>ᚱ Runa<br><div style="transform:${data.rrev?'rotate(180deg)':'none'}">${runeCardHTML(data.runa)}</div></div></div>`;
-    document.getElementById('dailyResult').innerHTML = `<div class="result-area" id="daily-export"><div class="result-title">🌟 Mensaje del Día</div><div class="interp-card"><h3>${data.card.name} ${data.rev?'(Invertida)':''}</h3><p>${data.rev?data.card.rv:data.card.up}</p></div><div class="interp-card"><h3>${data.runa.name} ${data.rrev&&data.runa.rv&&data.runa.rv!=='No tiene reverso.'?'(Invertida)':''}</h3><p>${data.rrev&&data.runa.rv&&data.runa.rv!=='No tiene reverso.'?data.runa.rv:data.runa.up}</p></div><div id="dailyIAResult"></div></div>`;
-    document.getElementById('dailyActions').style.display = 'flex';
-    addToHistory('daily', { card: data.card, rev: data.rev, runa: data.runa, rrev: data.rrev }, '');
+// ================== FUNCIONES PARA MOSTRAR RESULTADOS EN MODAL ==================
+function showResultInModal(title, contentHtml, actionsHtml = '') {
+    let modalContent = `
+        <h2 style="color:var(--gold); text-align:center;">${title}</h2>
+        <div id="modalResultContent">${contentHtml}</div>
+        <div id="modalResultActions" class="action-buttons" style="margin-top:15px;">${actionsHtml}</div>
+    `;
+    let modal = openModal(modalContent);
+    // Adjuntar eventos a los botones de acción (IA, compartir, etc.)
+    if (actionsHtml) {
+        // Los botones ya tienen sus event listeners globales, pero necesitan un contexto
+        // Reasignar eventos manualmente
+        modal.querySelectorAll('.btn-ia').forEach(btn => {
+            btn.addEventListener('click', () => getIA(btn.dataset.type));
+        });
+        modal.querySelectorAll('.btn-share').forEach(btn => {
+            btn.addEventListener('click', () => {
+                let exportDiv = modal.querySelector('#modalResultContent');
+                if (exportDiv) shareImgFromElement(exportDiv, btn.dataset.type);
+            });
+        });
+        modal.querySelectorAll('.btn-pdf').forEach(btn => {
+            btn.addEventListener('click', () => {
+                let exportDiv = modal.querySelector('#modalResultContent');
+                if (exportDiv) exportPDFFromElement(exportDiv, btn.dataset.type);
+            });
+        });
+        modal.querySelectorAll('.btn-share-social').forEach(btn => {
+            btn.addEventListener('click', () => {
+                let text = btn.getAttribute('data-text') || '';
+                if (text) shareSocial(btn.dataset.type, text);
+            });
+        });
+    }
+    return modal;
 }
-function drawDailyCard() { if (getDailyData()) { toast('🔒 Ya has revelado tu carta hoy. Vuelve mañana.'); return; } const card = ALL_TAROT[Math.floor(Math.random() * ALL_TAROT.length)]; const rev = Math.random() < 0.25; const runa = RUNAS[Math.floor(Math.random() * RUNAS.length)]; const rrev = Math.random() < 0.25; saveDailyData(card, rev, runa, rrev); checkDailyButton(); }
 
+async function shareImgFromElement(element, type) {
+    toast('📸 Generando imagen...');
+    try {
+        const canvas = await html2canvas(element, { backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false });
+        const a = document.createElement('a');
+        a.download = `oraculo-${type}-${Date.now()}.jpg`;
+        a.href = canvas.toDataURL('image/jpeg', 0.93);
+        a.click();
+        toast('✅ Imagen guardada');
+    } catch (e) { toast('Error al generar imagen'); }
+}
+
+async function exportPDFFromElement(element, type) {
+    toast('📄 Generando PDF...');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    try {
+        const canvas = await html2canvas(element, { backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false });
+        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+        const imgWidth = 210;
+        const pageHeight = 297;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        while (heightLeft > 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+        }
+        pdf.save(`oraculo-${type}-${Date.now()}.pdf`);
+        toast('✅ PDF generado');
+    } catch (e) { toast('Error al generar PDF: ' + e.message); }
+}
+
+function shareSocial(type, text) {
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+// ================== TIRADAS CON MODAL ==================
 function drawTarot() {
     let card = ALL_TAROT[Math.floor(Math.random() * ALL_TAROT.length)];
     let rev = Math.random() < 0.25;
-    lastState.tarot = { card, rev, q: document.getElementById('tarotQ').value };
-    document.getElementById('tarotResult').innerHTML = `<div class="result-area" id="tarot-export"><div class="result-title">🎴 Tu Carta</div>${lastState.tarot.q ? `<p>"${lastState.tarot.q}"</p>` : ''}<div style="display:flex;justify-content:center">${cardHTML(card, { big: true, reversed: rev })}</div><div class="interp-card"><h3>${card.name} ${rev ? '(Invertida)' : ''}</h3><p>${rev ? card.rv : card.up}</p></div><div id="tarotIAResult"></div></div>`;
-    document.getElementById('tarotActions').style.display = 'flex';
-    const newCard = document.querySelector('#tarotResult .real-card');
-    if (newCard) { newCard.classList.add('animate-flip'); setTimeout(() => newCard.classList.remove('animate-flip'), 600); }
-    addToHistory('tarot', { card, rev }, lastState.tarot.q);
-    if (document.getElementById('tarotAutoIA')?.checked) setTimeout(() => getIA('tarot'), 500);
+    let q = document.getElementById('tarotQ').value;
+    lastState.tarot = { card, rev, q };
+    let contentHtml = `
+        ${q ? `<p><strong>Pregunta:</strong> "${q}"</p>` : ''}
+        <div style="display:flex;justify-content:center">${cardHTML(card, { big: true, reversed: rev })}</div>
+        <div class="interp-card"><h3>${card.name} ${rev ? '(Invertida)' : ''}</h3><p>${rev ? card.rv : card.up}</p></div>
+        <div id="tarotIAResult"></div>
+    `;
+    let actionsHtml = `
+        <button class="btn-mystic btn-ia" data-type="tarot">🤖 IA</button>
+        <button class="btn-mystic btn-share" data-type="tarot">📸</button>
+        <button class="btn-mystic btn-pdf" data-type="tarot">📄</button>
+        <button class="btn-mystic btn-share-social" data-type="tarot">📱 Compartir</button>
+    `;
+    let modal = showResultInModal('🎴 Tu Carta', contentHtml, actionsHtml);
+    // Guardar en historial
+    addToHistory('tarot', { card, rev }, q);
+    // IA automática si está activada
+    if (document.getElementById('tarotAutoIA')?.checked) {
+        setTimeout(() => {
+            let iaDiv = modal.querySelector('#tarotIAResult');
+            if (iaDiv) getIA('tarot');
+        }, 500);
+    }
 }
 
 function drawRune() {
     let r = RUNAS[Math.floor(Math.random() * RUNAS.length)];
     let rev = Math.random() < 0.25;
-    lastState.runa = { r, rev, q: document.getElementById('runaQ').value };
-    document.getElementById('runaResult').innerHTML = `<div class="result-area" id="runa-export"><div class="result-title">ᚱ Tu Runa</div>${lastState.runa.q ? `<p>"${lastState.runa.q}"</p>` : ''}<div style="display:flex;justify-content:center;transform:${rev ? 'rotate(180deg)' : 'none'}">${runeCardHTML(r)}</div><div class="interp-card"><h3>${r.name} ${rev ? '(Invertida)' : ''}</h3><p>${rev && r.rv ? r.rv : r.up}</p></div><div id="runaIAResult"></div></div>`;
-    document.getElementById('runaActions').style.display = 'flex';
-    const newCard = document.querySelector('#runaResult .rune-card');
-    if (newCard) { newCard.classList.add('animate-fade'); setTimeout(() => newCard.classList.remove('animate-fade'), 400); }
-    addToHistory('runa', { r, rev }, lastState.runa.q);
-    if (document.getElementById('runasAutoIA')?.checked) setTimeout(() => getIA('runa'), 500);
+    let q = document.getElementById('runaQ').value;
+    lastState.runa = { r, rev, q };
+    let contentHtml = `
+        ${q ? `<p><strong>Pregunta:</strong> "${q}"</p>` : ''}
+        <div style="display:flex;justify-content:center;transform:${rev ? 'rotate(180deg)' : 'none'}">${runeCardHTML(r)}</div>
+        <div class="interp-card"><h3>${r.name} ${rev ? '(Invertida)' : ''}</h3><p>${rev && r.rv ? r.rv : r.up}</p></div>
+        <div id="runaIAResult"></div>
+    `;
+    let actionsHtml = `
+        <button class="btn-mystic btn-ia" data-type="runa">🤖 IA</button>
+        <button class="btn-mystic btn-share" data-type="runa">📸</button>
+        <button class="btn-mystic btn-pdf" data-type="runa">📄</button>
+        <button class="btn-mystic btn-share-social" data-type="runa">📱 Compartir</button>
+    `;
+    let modal = showResultInModal('ᚱ Tu Runa', contentHtml, actionsHtml);
+    addToHistory('runa', { r, rev }, q);
+    if (document.getElementById('runasAutoIA')?.checked) {
+        setTimeout(() => getIA('runa'), 500);
+    }
 }
 
 function doSpread(spreadType) {
@@ -702,86 +833,75 @@ function doSpread(spreadType) {
     lastState.tirada = { cfg, drawn, q, type: spreadType === 'chakras' ? 'chakras' : 'tarot' };
     let yn = '';
     if (spreadType === 'yesno') { let yesCards = ['El Sol','La Estrella','El Mundo','El Mago','Los Amantes','El Carro','La Fuerza']; let isYes = yesCards.some(n => drawn[0].c.name.includes(n)) && !drawn[0].rev; yn = `<div style="text-align:center;font-size:2.8rem;color:${isYes?'#4ade80':'#f87171'}">${isYes?'✅ SÍ':'🔴 NO'}</div>`; }
-    let html = `<div class="result-area" id="tirada-export"><div class="result-title">⚡ ${cfg.name}</div>${q?`<p>"${q}"</p>`:''}${yn}<div style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:20px 0">${drawn.map(x=>`<div style="text-align:center"><div style="font-size:0.52rem;color:var(--gold);">${x.pos}</div>${cardHTML(x.c,{reversed:x.rev})}</div>`).join('')}</div>${drawn.map(x=>`<div class="interp-card"><h3>${x.pos}: ${x.c.name} ${x.rev?'(Inv.)':''}</h3><p>${x.rev?x.c.rv:x.c.up}</p></div>`).join('')}<div id="tiradaIAResult"></div></div>`;
-    document.getElementById('tiradaResult').innerHTML = html;
-    document.getElementById('tiradaActions').style.display = 'flex';
-    const firstCard = document.querySelector('#tiradaResult .real-card');
-    if (firstCard) { firstCard.classList.add('animate-flip'); setTimeout(() => firstCard.classList.remove('animate-flip'), 600); }
+    let contentHtml = `
+        ${q ? `<p><strong>Pregunta:</strong> "${q}"</p>` : ''}
+        ${yn}
+        <div style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:20px 0">${drawn.map(x=>`<div style="text-align:center"><div style="font-size:0.52rem;color:var(--gold);">${x.pos}</div>${cardHTML(x.c,{reversed:x.rev})}</div>`).join('')}</div>
+        ${drawn.map(x=>`<div class="interp-card"><h3>${x.pos}: ${x.c.name} ${x.rev?'(Inv.)':''}</h3><p>${x.rev?x.c.rv:x.c.up}</p></div>`).join('')}
+        <div id="tiradaIAResult"></div>
+    `;
+    let actionsHtml = `
+        <button class="btn-mystic btn-ia" data-type="tirada">🤖 IA</button>
+        <button class="btn-mystic btn-share" data-type="tirada">📸</button>
+        <button class="btn-mystic btn-pdf" data-type="tirada">📄</button>
+        <button class="btn-mystic btn-share-social" data-type="tirada">📱 Compartir</button>
+    `;
+    let modal = showResultInModal(`⚡ ${cfg.name}`, contentHtml, actionsHtml);
     addToHistory('tirada', { cfg, drawn }, q);
 }
 
-function drawThreeRunes() { let runes = []; for(let i=0;i<3;i++) { let r=RUNAS[Math.floor(Math.random()*RUNAS.length)]; let rev=Math.random()<0.25; runes.push({r,rev}); } let q = document.getElementById('tiradaQ').value; lastState.tirada = { runes, q, type: 'runes' }; let html = `<div class="result-area" id="tirada-export"><div class="result-title">ᚱ Tirada de 3 Runas</div>${q?`<p>"${q}"</p>`:''}<div style="display:flex;gap:20px;justify-content:center">${runes.map((x,i)=>`<div><div>${i===0?'Pasado':i===1?'Presente':'Futuro'}</div><div style="transform:${x.rev?'rotate(180deg)':'none'}">${runeCardHTML(x.r)}</div></div>`).join('')}</div>${runes.map((x,i)=>`<div class="interp-card"><h3>${i===0?'Pasado':i===1?'Presente':'Futuro'}: ${x.r.name} ${x.rev?'(Inv.)':''}</h3><p>${x.rev&&x.r.rv?x.r.rv:x.r.up}</p></div>`).join('')}<div id="tiradaIAResult"></div></div>`; document.getElementById('tiradaResult').innerHTML = html; document.getElementById('tiradaActions').style.display = 'flex'; addToHistory('tirada', { runes }, q); }
-function drawFiveRunes() { let runes = []; for(let i=0;i<5;i++) { let r=RUNAS[Math.floor(Math.random()*RUNAS.length)]; let rev=Math.random()<0.25; runes.push({r,rev}); } let q = document.getElementById('tiradaQ').value; lastState.tirada = { runes, q, type: 'runes' }; let pos = ['Pasado','Presente','Futuro','Consejo','Resultado']; let html = `<div class="result-area" id="tirada-export"><div class="result-title">ᚱ Tirada de 5 Runas</div>${q?`<p>"${q}"</p>`:''}<div style="display:flex;gap:20px;justify-content:center">${runes.map((x,i)=>`<div><div>${pos[i]}</div><div style="transform:${x.rev?'rotate(180deg)':'none'}">${runeCardHTML(x.r)}</div></div>`).join('')}</div>${runes.map((x,i)=>`<div class="interp-card"><h3>${pos[i]}: ${x.r.name} ${x.rev?'(Inv.)':''}</h3><p>${x.rev&&x.r.rv?x.r.rv:x.r.up}</p></div>`).join('')}<div id="tiradaIAResult"></div></div>`; document.getElementById('tiradaResult').innerHTML = html; document.getElementById('tiradaActions').style.display = 'flex'; addToHistory('tirada', { runes }, q); }
-function drawSevenRunes() { let runes = []; for(let i=0;i<7;i++) { let r=RUNAS[Math.floor(Math.random()*RUNAS.length)]; let rev=Math.random()<0.25; runes.push({r,rev}); } let q = document.getElementById('tiradaQ').value; lastState.tirada = { runes, q, type: 'runes' }; let pos = ['Pasado','Base','Presente','Futuro','Consejo','Influencia','Resultado']; let html = `<div class="result-area" id="tirada-export"><div class="result-title">ᚱ Tirada de 7 Runas</div>${q?`<p>"${q}"</p>`:''}<div style="display:flex;gap:20px;justify-content:center">${runes.map((x,i)=>`<div><div>${pos[i]}</div><div style="transform:${x.rev?'rotate(180deg)':'none'}">${runeCardHTML(x.r)}</div></div>`).join('')}</div>${runes.map((x,i)=>`<div class="interp-card"><h3>${pos[i]}: ${x.r.name} ${x.rev?'(Inv.)':''}</h3><p>${x.rev&&x.r.rv?x.r.rv:x.r.up}</p></div>`).join('')}<div id="tiradaIAResult"></div></div>`; document.getElementById('tiradaResult').innerHTML = html; document.getElementById('tiradaActions').style.display = 'flex'; addToHistory('tirada', { runes }, q); }
+function drawThreeRunes() { let runes = []; for(let i=0;i<3;i++) { let r=RUNAS[Math.floor(Math.random()*RUNAS.length)]; let rev=Math.random()<0.25; runes.push({r,rev}); } let q = document.getElementById('tiradaQ').value; lastState.tirada = { runes, q, type: 'runes' }; let contentHtml = `${q?`<p>"${q}"</p>`:''}<div style="display:flex;gap:20px;justify-content:center">${runes.map((x,i)=>`<div><div>${i===0?'Pasado':i===1?'Presente':'Futuro'}</div><div style="transform:${x.rev?'rotate(180deg)':'none'}">${runeCardHTML(x.r)}</div></div>`).join('')}</div>${runes.map((x,i)=>`<div class="interp-card"><h3>${i===0?'Pasado':i===1?'Presente':'Futuro'}: ${x.r.name} ${x.rev?'(Inv.)':''}</h3><p>${x.rev&&x.r.rv?x.r.rv:x.r.up}</p></div>`).join('')}<div id="tiradaIAResult"></div>`; let actionsHtml = `<button class="btn-mystic btn-ia" data-type="tirada">🤖 IA</button><button class="btn-mystic btn-share" data-type="tirada">📸</button><button class="btn-mystic btn-pdf" data-type="tirada">📄</button><button class="btn-mystic btn-share-social" data-type="tirada">📱 Compartir</button>`; let modal = showResultInModal('ᚱ Tirada de 3 Runas', contentHtml, actionsHtml); addToHistory('tirada', { runes }, q); }
+function drawFiveRunes() { let runes = []; for(let i=0;i<5;i++) { let r=RUNAS[Math.floor(Math.random()*RUNAS.length)]; let rev=Math.random()<0.25; runes.push({r,rev}); } let q = document.getElementById('tiradaQ').value; lastState.tirada = { runes, q, type: 'runes' }; let pos = ['Pasado','Presente','Futuro','Consejo','Resultado']; let contentHtml = `${q?`<p>"${q}"</p>`:''}<div style="display:flex;gap:20px;justify-content:center">${runes.map((x,i)=>`<div><div>${pos[i]}</div><div style="transform:${x.rev?'rotate(180deg)':'none'}">${runeCardHTML(x.r)}</div></div>`).join('')}</div>${runes.map((x,i)=>`<div class="interp-card"><h3>${pos[i]}: ${x.r.name} ${x.rev?'(Inv.)':''}</h3><p>${x.rev&&x.r.rv?x.r.rv:x.r.up}</p></div>`).join('')}<div id="tiradaIAResult"></div>`; let actionsHtml = `<button class="btn-mystic btn-ia" data-type="tirada">🤖 IA</button><button class="btn-mystic btn-share" data-type="tirada">📸</button><button class="btn-mystic btn-pdf" data-type="tirada">📄</button><button class="btn-mystic btn-share-social" data-type="tirada">📱 Compartir</button>`; let modal = showResultInModal('ᚱ Tirada de 5 Runas', contentHtml, actionsHtml); addToHistory('tirada', { runes }, q); }
+function drawSevenRunes() { let runes = []; for(let i=0;i<7;i++) { let r=RUNAS[Math.floor(Math.random()*RUNAS.length)]; let rev=Math.random()<0.25; runes.push({r,rev}); } let q = document.getElementById('tiradaQ').value; lastState.tirada = { runes, q, type: 'runes' }; let pos = ['Pasado','Base','Presente','Futuro','Consejo','Influencia','Resultado']; let contentHtml = `${q?`<p>"${q}"</p>`:''}<div style="display:flex;gap:20px;justify-content:center">${runes.map((x,i)=>`<div><div>${pos[i]}</div><div style="transform:${x.rev?'rotate(180deg)':'none'}">${runeCardHTML(x.r)}</div></div>`).join('')}</div>${runes.map((x,i)=>`<div class="interp-card"><h3>${pos[i]}: ${x.r.name} ${x.rev?'(Inv.)':''}</h3><p>${x.rev&&x.r.rv?x.r.rv:x.r.up}</p></div>`).join('')}<div id="tiradaIAResult"></div>`; let actionsHtml = `<button class="btn-mystic btn-ia" data-type="tirada">🤖 IA</button><button class="btn-mystic btn-share" data-type="tirada">📸</button><button class="btn-mystic btn-pdf" data-type="tirada">📄</button><button class="btn-mystic btn-share-social" data-type="tirada">📱 Compartir</button>`; let modal = showResultInModal('ᚱ Tirada de 7 Runas', contentHtml, actionsHtml); addToHistory('tirada', { runes }, q); }
 
-// ================== LUNA ==================
+// Carta del día también en modal
+function showDailyResult(data) {
+    lastState.daily = data;
+    let contentHtml = `
+        <div style="display:flex;gap:30px;justify-content:center;flex-wrap:wrap">
+            <div>🃏 Tarot<br>${cardHTML(data.card,{big:true,reversed:data.rev})}</div>
+            <div>ᚱ Runa<br><div style="transform:${data.rrev?'rotate(180deg)':'none'}">${runeCardHTML(data.runa)}</div></div>
+        </div>
+        <div class="interp-card"><h3>${data.card.name} ${data.rev?'(Invertida)':''}</h3><p>${data.rev?data.card.rv:data.card.up}</p></div>
+        <div class="interp-card"><h3>${data.runa.name} ${data.rrev&&data.runa.rv&&data.runa.rv!=='No tiene reverso.'?'(Invertida)':''}</h3><p>${data.rrev&&data.runa.rv&&data.runa.rv!=='No tiene reverso.'?data.runa.rv:data.runa.up}</p></div>
+        <div id="dailyIAResult"></div>
+    `;
+    let actionsHtml = `
+        <button class="btn-mystic btn-ia" data-type="daily">🤖 IA</button>
+        <button class="btn-mystic btn-share" data-type="daily">📸</button>
+        <button class="btn-mystic btn-pdf" data-type="daily">📄</button>
+        <button class="btn-mystic btn-share-social" data-type="daily">📱 Compartir</button>
+    `;
+    let modal = showResultInModal('🌟 Mensaje del Día', contentHtml, actionsHtml);
+    addToHistory('daily', { card: data.card, rev: data.rev, runa: data.runa, rrev: data.rrev }, '');
+}
+
+function drawDailyCard() { if (getDailyData()) { toast('🔒 Ya has revelado tu carta hoy. Vuelve mañana.'); return; } const card = ALL_TAROT[Math.floor(Math.random() * ALL_TAROT.length)]; const rev = Math.random() < 0.25; const runa = RUNAS[Math.floor(Math.random() * RUNAS.length)]; const rrev = Math.random() < 0.25; saveDailyData(card, rev, runa, rrev); checkDailyButton(); }
+
+// ================== LUNA, SUEÑOS, NUMEROLOGÍA, CHAT ==================
 function getMoonPhaseForDate(date) { const newMoonDate = new Date('2024-01-11'); const diff = (date - newMoonDate) / (864e5); const age = ((diff % 29.53058867) + 29.53058867) % 29.53058867; let index = age < 1.85 ? 0 : age < 7.38 ? 1 : age < 9.22 ? 2 : age < 14.77 ? 3 : age < 16.61 ? 4 : age < 22.15 ? 5 : age < 23.99 ? 6 : 7; return MOON_PHASES[index]; }
-function calcMoonForDate() { let dateInput = document.getElementById('moonDate').value; if (!dateInput) return toast('Selecciona una fecha'); let date = new Date(dateInput); let phase = getMoonPhaseForDate(date); lastState.luna = { phase }; document.getElementById('moonToday').innerHTML = `<div class="result-area" id="luna-export"><div class="result-title">🌙 Fase Lunar para ${date.toLocaleDateString()}</div><div style="text-align:center;font-size:4rem">${phase.sym}</div><div style="text-align:center;color:var(--gold);font-size:1.3rem;">${phase.name}</div><div class="interp-card"><p>${phase.meaning}</p><p><strong>Elemento:</strong> ${phase.el}</p><p>🕯️ ${phase.ritual}</p><p><em>${phase.affirmation}</em></p></div><div id="lunaIAResult"></div></div>`; document.getElementById('lunaActions').style.display = 'flex'; }
-function calcMoonToday() { let phase = getMoonPhaseForDate(new Date()); lastState.luna = { phase }; document.getElementById('moonToday').innerHTML = `<div class="result-area" id="luna-export"><div class="result-title">🌙 Fase Lunar de Hoy</div><div style="text-align:center;font-size:4rem">${phase.sym}</div><div style="text-align:center;color:var(--gold);font-size:1.3rem;">${phase.name}</div><div class="interp-card"><p>${phase.meaning}</p><p><strong>Elemento:</strong> ${phase.el}</p><p>🕯️ ${phase.ritual}</p><p><em>${phase.affirmation}</em></p></div><div id="lunaIAResult"></div></div>`; document.getElementById('lunaActions').style.display = 'flex'; }
-function drawMoon() { let phase = MOON_PHASES[Math.floor(Math.random() * MOON_PHASES.length)]; lastState.luna = { phase }; document.getElementById('lunaResult').innerHTML = `<div class="result-area" id="luna-export"><div class="result-title">🌕 Consulta Lunar Aleatoria</div><div style="text-align:center;font-size:3rem">${phase.sym}</div><div style="text-align:center;color:var(--gold);">${phase.name}</div><div class="interp-card"><p>${phase.meaning}</p><p>🕯️ ${phase.ritual}</p><p><em>${phase.affirmation}</em></p></div><div id="lunaIAResult"></div></div>`; document.getElementById('lunaActions').style.display = 'flex'; }
+function calcMoonForDate() { let dateInput = document.getElementById('moonDate').value; if (!dateInput) return toast('Selecciona una fecha'); let date = new Date(dateInput); let phase = getMoonPhaseForDate(date); lastState.luna = { phase }; let contentHtml = `<div style="text-align:center;font-size:4rem">${phase.sym}</div><div style="text-align:center;color:var(--gold);font-size:1.3rem;">${phase.name}</div><div class="interp-card"><p>${phase.meaning}</p><p><strong>Elemento:</strong> ${phase.el}</p><p>🕯️ ${phase.ritual}</p><p><em>${phase.affirmation}</em></p></div><div id="lunaIAResult"></div>`; let actionsHtml = `<button class="btn-mystic btn-ia" data-type="luna">🤖 IA</button><button class="btn-mystic btn-share" data-type="luna">📸</button><button class="btn-mystic btn-pdf" data-type="luna">📄</button><button class="btn-mystic btn-share-social" data-type="luna">📱 Compartir</button>`; showResultInModal(`🌙 Fase Lunar para ${date.toLocaleDateString()}`, contentHtml, actionsHtml); }
+function calcMoonToday() { let phase = getMoonPhaseForDate(new Date()); lastState.luna = { phase }; let contentHtml = `<div style="text-align:center;font-size:4rem">${phase.sym}</div><div style="text-align:center;color:var(--gold);font-size:1.3rem;">${phase.name}</div><div class="interp-card"><p>${phase.meaning}</p><p><strong>Elemento:</strong> ${phase.el}</p><p>🕯️ ${phase.ritual}</p><p><em>${phase.affirmation}</em></p></div><div id="lunaIAResult"></div>`; let actionsHtml = `<button class="btn-mystic btn-ia" data-type="luna">🤖 IA</button><button class="btn-mystic btn-share" data-type="luna">📸</button><button class="btn-mystic btn-pdf" data-type="luna">📄</button><button class="btn-mystic btn-share-social" data-type="luna">📱 Compartir</button>`; showResultInModal('🌙 Fase Lunar de Hoy', contentHtml, actionsHtml); }
+function drawMoon() { let phase = MOON_PHASES[Math.floor(Math.random() * MOON_PHASES.length)]; lastState.luna = { phase }; let contentHtml = `<div style="text-align:center;font-size:3rem">${phase.sym}</div><div style="text-align:center;color:var(--gold);">${phase.name}</div><div class="interp-card"><p>${phase.meaning}</p><p>🕯️ ${phase.ritual}</p><p><em>${phase.affirmation}</em></p></div><div id="lunaIAResult"></div>`; let actionsHtml = `<button class="btn-mystic btn-ia" data-type="luna">🤖 IA</button><button class="btn-mystic btn-share" data-type="luna">📸</button><button class="btn-mystic btn-pdf" data-type="luna">📄</button><button class="btn-mystic btn-share-social" data-type="luna">📱 Compartir</button>`; showResultInModal('🌕 Consulta Lunar Aleatoria', contentHtml, actionsHtml); }
 
-// ================== SUEÑOS ==================
 const dreamSymbols = { 'agua': 'Emociones, fluidez, inconsciente.', 'fuego': 'Pasión, transformación, energía.', 'volar': 'Libertad, ambición, expansión.', 'caída': 'Ansiedad, inseguridad, miedo al fracaso.', 'muerte': 'Cambio profundo, renacimiento, transformación.', 'casa': 'Tu mente, vida interior, seguridad.', 'dientes': 'Preocupación por imagen, comunicación.', 'serpiente': 'Sabiduría, peligro oculto, transformación.', 'gato': 'Intuición, independencia, misterio.', 'perro': 'Lealtad, amistad, protección.', 'escuela': 'Aprendizaje, evaluación, crecimiento.', 'boda': 'Unión, compromiso, integración.', 'dinero': 'Valor personal, seguridad, abundancia.' };
 function searchSymbol() { let input = document.getElementById('symbolSearch').value.toLowerCase(); let resultDiv = document.getElementById('symbolResult'); if (!input) { resultDiv.innerHTML = ''; return; } let found = Object.entries(dreamSymbols).filter(([key]) => key.includes(input) || input.includes(key)); if (found.length > 0) { resultDiv.innerHTML = found.map(([key, value]) => `<p><strong>${key}:</strong> ${value}</p>`).join(''); } else { resultDiv.innerHTML = '<p>No se encontró ese símbolo. Describe tu sueño con detalle para una interpretación personalizada.</p>'; } }
 function saveDream() { let text = document.getElementById('dreamText').value.trim(); if (!text) return toast('Escribe un sueño'); savedDreams = JSON.parse(localStorage.getItem('saved_dreams') || '[]'); savedDreams.unshift({ date: new Date().toISOString(), text }); if (savedDreams.length > 20) savedDreams.pop(); localStorage.setItem('saved_dreams', JSON.stringify(savedDreams)); renderSavedDreams(); toast('Sueño guardado'); }
 function renderSavedDreams() { savedDreams = JSON.parse(localStorage.getItem('saved_dreams') || '[]'); const container = document.getElementById('savedDreamsList'); if (!container) return; if (savedDreams.length === 0) { container.innerHTML = '<p class="section-desc">No hay sueños guardados aún.</p>'; return; } container.innerHTML = savedDreams.map((d, i) => `<div class="saved-dream-item" data-index="${i}">${new Date(d.date).toLocaleDateString()}: ${d.text.substring(0, 60)}...</div>`).join(''); document.querySelectorAll('.saved-dream-item').forEach(el => { el.addEventListener('click', () => { const idx = parseInt(el.dataset.index); document.getElementById('dreamText').value = savedDreams[idx].text; toast('Sueño cargado'); }); }); }
-function interpretDream() { let txt = document.getElementById('dreamText').value.trim(); if (!txt) return toast('Describe tu sueño'); lastState.dream = { txt }; document.getElementById('dreamResult').innerHTML = `<div class="result-area" id="dream-export"><div class="result-title">💭 Interpretación</div><div class="interp-card"><p>Tu sueño refleja procesos internos. La IA te dará una visión más profunda.</p></div><div id="dreamIAResult"></div></div>`; document.getElementById('dreamActions').style.display = 'flex'; }
+function interpretDream() { let txt = document.getElementById('dreamText').value.trim(); if (!txt) return toast('Describe tu sueño'); lastState.dream = { txt }; let contentHtml = `<div class="interp-card"><p>Tu sueño refleja procesos internos. La IA te dará una visión más profunda.</p></div><div id="dreamIAResult"></div>`; let actionsHtml = `<button class="btn-mystic btn-ia" data-type="dream">🤖 IA</button><button class="btn-mystic btn-share" data-type="dream">📸</button><button class="btn-mystic btn-pdf" data-type="dream">📄</button><button class="btn-mystic btn-share-social" data-type="dream">📱 Compartir</button>`; showResultInModal('💭 Interpretación del Sueño', contentHtml, actionsHtml); }
 function dreamIA() { interpretDream(); setTimeout(() => getIA('dream'), 500); }
 
-// ================== NUMEROLOGÍA ==================
 function reduceToSingle(n) { while(n>9 && n!==11 && n!==22 && n!==33) n=n.toString().split('').reduce((a,b)=>a+parseInt(b),0); return n; }
 function nameToNumber(name) { if (!name) return 0; let clean = name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ]/g, ''); let sum = 0; const map = { 'A':1,'B':2,'C':3,'D':4,'E':5,'F':6,'G':7,'H':8,'I':9,'J':1,'K':2,'L':3,'M':4,'N':5,'Ñ':5,'O':6,'P':7,'Q':8,'R':9,'S':1,'T':2,'U':3,'V':4,'W':5,'X':6,'Y':7,'Z':8,'Á':1,'É':5,'Í':9,'Ó':6,'Ú':3,'Ü':3 }; for (let c of clean) sum += map[c] || 0; return reduceToSingle(sum); }
-function calcNumerologia() { let name = document.getElementById('numName').value || 'Consultante'; let dob = document.getElementById('numDob').value; let lifePath = '', expression = ''; if (dob) { let nums = dob.replace(/-/g, '').split('').map(Number); lifePath = reduceToSingle(nums.reduce((a,b)=>a+b,0)); } if (name) expression = nameToNumber(name); const lifeDesc = { 1:'Líder nato, independiente.',2:'Diplomático, cooperador.',3:'Creativo, comunicador.',4:'Constructor, disciplinado.',5:'Aventurero, libre.',6:'Cuidador, responsable.',7:'Sabio, analítico.',8:'Poderoso, exitoso.',9:'Humanitario, compasivo.',11:'Maestro inspirador.',22:'Maestro constructor.',33:'Maestro sanador.' }; let html = `<div class="result-area" id="numerologia-export"><div class="result-title">🔢 Numerología de ${name}</div>${lifePath ? `<div style="text-align:center"><span style="font-size:4rem;color:var(--gold);">${lifePath}</span><p>Camino de Vida</p></div><div class="num-details"><h3>✨ Tu misión</h3><p>${lifeDesc[lifePath] || ''}</p><h3>❤️ Salud</h3><p>Número Grabovoi: 9187948181</p><h3>💼 Trabajo y Economía</h3><p>Número: 5207418</p><h3>💑 Pareja</h3><p>Número: 8888888</p><div class="grabovoi-badge">🔢 Números de Grabovoi: <strong>9187948181</strong> (salud), <strong>5207418</strong> (dinero), <strong>8888888</strong> (amor), <strong>1891012</strong> (propósito).</div></div>` : ''}${expression ? `<div><span style="font-size:2rem;">${expression}</span><p>Expresión</p><p>Talento para ${expression===1?'liderar':expression===2?'mediar':expression===3?'crear':expression===4?'organizar':expression===5?'aventurar':expression===6?'cuidar':expression===7?'analizar':expression===8?'dirigir':expression===9?'servir':'inspirar'}</p></div>` : ''}</div>`; document.getElementById('numerologiaResult').innerHTML = html; lastState.num = { lifePath, expression }; document.getElementById('numerologiaActions').style.display = 'flex'; }
-function calcSynastry() { let n1 = document.getElementById('synName1').value || 'Persona 1', d1 = document.getElementById('synDob1').value, n2 = document.getElementById('synName2').value || 'Persona 2', d2 = document.getElementById('synDob2').value; if (!d1 || !d2) return toast('Ingresa ambas fechas'); let lp1 = reduceToSingle(d1.replace(/-/g, '').split('').map(Number).reduce((a,b)=>a+b,0)); let lp2 = reduceToSingle(d2.replace(/-/g, '').split('').map(Number).reduce((a,b)=>a+b,0)); let e1 = nameToNumber(n1), e2 = nameToNumber(n2); let diff = Math.abs(lp1 - lp2); let compat = diff === 0 ? 'Almas gemelas ✨' : diff <= 2 ? 'Muy alta 💞' : diff <= 4 ? 'Buena 💕' : diff <= 6 ? 'Media 💫' : 'Kármica 🔮'; let html = `<div class="result-area" id="synastry-export"><div class="result-title">❤️ ${n1} y ${n2}</div><div style="display:flex;justify-content:center;gap:40px"><div><strong>${n1}</strong><br><span style="font-size:2.5rem;color:var(--gold);">${lp1}</span>${e1 ? `<br>Expresión ${e1}` : ''}</div><div><strong>${n2}</strong><br><span style="font-size:2.5rem;color:var(--gold);">${lp2}</span>${e2 ? `<br>Expresión ${e2}` : ''}</div></div><p style="text-align:center">Compatibilidad: <strong>${compat}</strong></p><div class="num-details"><h3>💞 Interpretación</h3><p>Diferencia de ${diff}. ${diff === 0 ? 'Almas gemelas.' : diff <= 2 ? 'Muy alta.' : diff <= 4 ? 'Buena.' : diff <= 6 ? 'Media.' : 'Kármica.'}</p></div><div id="synastryIAResult"></div></div>`; document.getElementById('synastryResult').innerHTML = html; lastState.syn = { n1, n2, lp1, lp2 }; document.getElementById('synastryActions').style.display = 'flex'; }
+function calcNumerologia() { let name = document.getElementById('numName').value || 'Consultante'; let dob = document.getElementById('numDob').value; let lifePath = '', expression = ''; if (dob) { let nums = dob.replace(/-/g, '').split('').map(Number); lifePath = reduceToSingle(nums.reduce((a,b)=>a+b,0)); } if (name) expression = nameToNumber(name); const lifeDesc = { 1:'Líder nato, independiente.',2:'Diplomático, cooperador.',3:'Creativo, comunicador.',4:'Constructor, disciplinado.',5:'Aventurero, libre.',6:'Cuidador, responsable.',7:'Sabio, analítico.',8:'Poderoso, exitoso.',9:'Humanitario, compasivo.',11:'Maestro inspirador.',22:'Maestro constructor.',33:'Maestro sanador.' }; let contentHtml = `<div class="result-title">🔢 Numerología de ${name}</div>${lifePath ? `<div style="text-align:center"><span style="font-size:4rem;color:var(--gold);">${lifePath}</span><p>Camino de Vida</p></div><div class="num-details"><h3>✨ Tu misión</h3><p>${lifeDesc[lifePath] || ''}</p><h3>❤️ Salud</h3><p>Número Grabovoi: 9187948181</p><h3>💼 Trabajo y Economía</h3><p>Número: 5207418</p><h3>💑 Pareja</h3><p>Número: 8888888</p><div class="grabovoi-badge">🔢 Números de Grabovoi: <strong>9187948181</strong> (salud), <strong>5207418</strong> (dinero), <strong>8888888</strong> (amor), <strong>1891012</strong> (propósito).</div></div>` : ''}${expression ? `<div><span style="font-size:2rem;">${expression}</span><p>Expresión</p><p>Talento para ${expression===1?'liderar':expression===2?'mediar':expression===3?'crear':expression===4?'organizar':expression===5?'aventurar':expression===6?'cuidar':expression===7?'analizar':expression===8?'dirigir':expression===9?'servir':'inspirar'}</p></div>` : ''}<div id="numerologiaIAResult"></div>`; let actionsHtml = `<button class="btn-mystic btn-ia" data-type="numerologia">🤖 IA</button><button class="btn-mystic btn-share" data-type="numerologia">📸</button><button class="btn-mystic btn-pdf" data-type="numerologia">📄</button><button class="btn-mystic btn-share-social" data-type="numerologia">📱 Compartir</button>`; showResultInModal('🔢 Numerología Sagrada', contentHtml, actionsHtml); lastState.num = { lifePath, expression }; }
+function calcSynastry() { let n1 = document.getElementById('synName1').value || 'Persona 1', d1 = document.getElementById('synDob1').value, n2 = document.getElementById('synName2').value || 'Persona 2', d2 = document.getElementById('synDob2').value; if (!d1 || !d2) return toast('Ingresa ambas fechas'); let lp1 = reduceToSingle(d1.replace(/-/g, '').split('').map(Number).reduce((a,b)=>a+b,0)); let lp2 = reduceToSingle(d2.replace(/-/g, '').split('').map(Number).reduce((a,b)=>a+b,0)); let e1 = nameToNumber(n1), e2 = nameToNumber(n2); let diff = Math.abs(lp1 - lp2); let compat = diff === 0 ? 'Almas gemelas ✨' : diff <= 2 ? 'Muy alta 💞' : diff <= 4 ? 'Buena 💕' : diff <= 6 ? 'Media 💫' : 'Kármica 🔮'; let contentHtml = `<div style="display:flex;justify-content:center;gap:40px"><div><strong>${n1}</strong><br><span style="font-size:2.5rem;color:var(--gold);">${lp1}</span>${e1 ? `<br>Expresión ${e1}` : ''}</div><div><strong>${n2}</strong><br><span style="font-size:2.5rem;color:var(--gold);">${lp2}</span>${e2 ? `<br>Expresión ${e2}` : ''}</div></div><p style="text-align:center">Compatibilidad: <strong>${compat}</strong></p><div class="num-details"><h3>💞 Interpretación</h3><p>Diferencia de ${diff}. ${diff === 0 ? 'Almas gemelas.' : diff <= 2 ? 'Muy alta.' : diff <= 4 ? 'Buena.' : diff <= 6 ? 'Media.' : 'Kármica.'}</p></div><div id="synastryIAResult"></div>`; let actionsHtml = `<button class="btn-mystic btn-ia" data-type="synastry">🤖 IA</button><button class="btn-mystic btn-share" data-type="synastry">📸</button><button class="btn-mystic btn-pdf" data-type="synastry">📄</button><button class="btn-mystic btn-share-social" data-type="synastry">📱 Compartir</button>`; showResultInModal('❤️ Sinastría', contentHtml, actionsHtml); lastState.syn = { n1, n2, lp1, lp2 }; }
 const mirrorMeanings = { '00:00':'Nuevo ciclo comienza.', '01:01':'Confía en tu intuición.', '02:02':'Alianza y cooperación.', '03:03':'Expresión creativa.', '04:04':'Estructura y orden.', '05:05':'Cambio positivo.', '06:06':'Amor y armonía.', '07:07':'Espiritualidad.', '08:08':'Abundancia.', '09:09':'Cierre de ciclos.', '10:10':'Nuevos comienzos.', '11:11':'Portal de manifestación.', '12:12':'Alineación divina.', '13:13':'Transformación.', '14:14':'Adaptación.', '15:15':'Libertad.', '16:16':'Introspección.', '17:17':'Fe y optimismo.', '18:18':'Manifestación.', '19:19':'Culminación.', '20:20':'Equilibrio.', '21:21':'Éxito asegurado.', '22:22':'Maestro constructor.', '23:23':'Protección espiritual.', '111':'Pensamiento positivo.', '222':'Confianza.', '333':'Presencia de maestros.', '444':'Protección.', '555':'Cambio radical.', '666':'Equilibrio.', '777':'Buena suerte.', '888':'Abundancia infinita.', '999':'Cierre completo.' };
-function interpretMirror() { let input = document.getElementById('mirrorNumber').value.trim(); if (!input) return toast('Escribe una hora espejo o número repetido'); let meaning = mirrorMeanings[input] || mirrorMeanings[input.replace(':', '')] || 'Este número te invita a reflexionar. Presta atención a tus pensamientos y emociones.'; document.getElementById('mirrorResult').innerHTML = `<div class="result-area"><div class="result-title">🕒 Número Espejo: ${input}</div><div class="interp-card"><p>${meaning}</p></div></div>`; }
+function interpretMirror() { let input = document.getElementById('mirrorNumber').value.trim(); if (!input) return toast('Escribe una hora espejo o número repetido'); let meaning = mirrorMeanings[input] || mirrorMeanings[input.replace(':', '')] || 'Este número te invita a reflexionar. Presta atención a tus pensamientos y emociones.'; let contentHtml = `<div class="interp-card"><p>${meaning}</p></div>`; showResultInModal(`🕒 Número Espejo: ${input}`, contentHtml, ''); }
 function copyGrabovoi(code) { navigator.clipboard.writeText(code).then(() => { document.getElementById('grabovoiInfo').innerHTML = `<p>✅ Código ${code} copiado al portapapeles. Puedes usarlo para meditación o escribirlo.</p>`; setTimeout(() => { document.getElementById('grabovoiInfo').innerHTML = ''; }, 3000); }).catch(() => toast('No se pudo copiar')); }
 
-// ================== CHAT ==================
 function sendChat() { let input = document.getElementById('chatInput'); let msg = input.value.trim(); if (!msg) return; let chatHistory = document.getElementById('chatHistory'); let userMsg = document.createElement('div'); userMsg.className = 'chat-msg user'; userMsg.innerText = msg; chatHistory.appendChild(userMsg); input.value = ''; let botMsg = document.createElement('div'); botMsg.className = 'chat-msg bot'; botMsg.innerText = '🤔 Pensando...'; chatHistory.appendChild(botMsg); chatHistory.scrollTop = chatHistory.scrollHeight; (async () => { try { const personality = document.getElementById('personalitySelect')?.value || 'sabio'; const personas = { sabio:'Eres un sabio consejero espiritual', mistico:'Eres un místico poético', bromista:'Eres un oráculo bromista', romantico:'Eres un oráculo romántico' }; let res = await puter.ai.chat([{ role: 'system', content: personas[personality] }, { role: 'user', content: msg }], { model: 'gpt-4o-mini' }); let text = typeof res === 'string' ? res : res.message?.content; botMsg.innerText = text; speakText(text); } catch(e) { botMsg.innerText = 'Error, intenta de nuevo.'; } })(); }
 
-// ================== EXPORTACIÓN, RENDER, CONFIGURACIÓN ==================
-async function shareImg(type) {
-    let el = document.getElementById(`${type}-export`);
-    if (!el) return toast('No hay resultado para compartir');
-    toast('📸 Generando imagen...');
-    try {
-        const canvas = await html2canvas(el, { backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false });
-        const a = document.createElement('a');
-        a.download = `oraculo-${type}-${Date.now()}.jpg`;
-        a.href = canvas.toDataURL('image/jpeg', 0.93);
-        a.click();
-        toast('✅ Imagen guardada');
-    } catch (e) { toast('Error al generar imagen'); }
-}
-
-async function exportPDF(type) {
-    let el = document.getElementById(`${type}-export`);
-    if (!el) return toast('No hay resultado para exportar');
-    toast('📄 Generando PDF en tamaño A4...');
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    try {
-        const canvas = await html2canvas(el, { backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false });
-        const imgData = canvas.toDataURL('image/jpeg', 1.0);
-        const imgWidth = 210;
-        const pageHeight = 297;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-        while (heightLeft > 0) {
-            position = heightLeft - imgHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-        }
-        pdf.save(`oraculo-${type}-${Date.now()}.pdf`);
-        toast('✅ PDF generado (A4 completo)');
-    } catch (e) { toast('Error al generar PDF: ' + e.message); }
-}
-
+// ================== RENDER E INICIALIZACIÓN ==================
 function renderAll() {
     document.getElementById('majorGrid').innerHTML = MAJOR_ARCANA.map(c=>cardHTML(c)).join('');
     document.getElementById('minorGrid').innerHTML = MINOR_ARCANA.map(c=>cardHTML(c)).join('');
@@ -838,10 +958,6 @@ function createStars() {
     }
 }
 
-function shareSocial(type, text) {
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-}
-
 let totalCards = ALL_TAROT.length, loadedCards = 0;
 function preloadImages(limit = 12) {
     ALL_TAROT.slice(0, limit).forEach(card => {
@@ -882,10 +998,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('symbolSearch')?.addEventListener('input', searchSymbol);
     document.querySelectorAll('.grabovoi-card').forEach(card => { card.addEventListener('click', () => { const code = card.dataset.code; if (code) copyGrabovoi(code); }); });
     document.querySelectorAll('.num-tab').forEach(tab => { tab.addEventListener('click', () => { document.querySelectorAll('.num-tab').forEach(t=>t.classList.remove('active')); tab.classList.add('active'); const target = tab.dataset.numtab; document.querySelectorAll('.num-content').forEach(c=>c.classList.remove('active')); document.getElementById(`num-${target}`).classList.add('active'); }); });
-    document.querySelectorAll('.btn-ia').forEach(btn => btn.addEventListener('click', e => getIA(btn.dataset.type)));
-    document.querySelectorAll('.btn-share').forEach(btn => btn.addEventListener('click', e => shareImg(btn.dataset.type)));
-    document.querySelectorAll('.btn-pdf').forEach(btn => btn.addEventListener('click', e => exportPDF(btn.dataset.type)));
-    document.querySelectorAll('.btn-share-social').forEach(btn => { btn.addEventListener('click', () => { const type = btn.dataset.type; let text = ''; if (type === 'tarot' && lastState.tarot) { const card = lastState.tarot.card, rev = lastState.tarot.rev; text = `🔮 Mi tirada de Tarot: ${card.name} (${rev?'Invertida':'Derecha'}). ${rev?card.rv:card.up}`; } else if (type === 'runa' && lastState.runa) { const r = lastState.runa.r, rev = lastState.runa.rev; text = `ᚱ Mi runa: ${r.name} (${rev?'Invertida':'Derecha'}). ${rev&&r.rv?r.rv:r.up}`; } else if (type === 'daily' && lastState.daily) { const data = lastState.daily; text = `☀️ Mi carta del día: ${data.card.name} (${data.rev?'Invertida':'Derecha'}) y runa ${data.runa.name}.`; } else if (type === 'tirada' && lastState.tirada && lastState.tirada.cfg) { text = `⚡ Mi tirada de ${lastState.tirada.cfg.name}: ${lastState.tirada.drawn.map(d=>`${d.c.name} (${d.rev?'Inv':'Der'})`).join(', ')}`; } else if (type === 'luna' && lastState.luna) { text = `🌙 Mi consulta lunar: ${lastState.luna.phase.name}. ${lastState.luna.phase.meaning}`; } else if (type === 'dream' && lastState.dream) { text = `💭 Mi sueño: "${lastState.dream.txt}".`; } else if (type === 'numerologia' && lastState.num) { text = `🔢 Mi número de vida: ${lastState.num.lifePath}, expresión: ${lastState.num.expression}.`; } else if (type === 'synastry' && lastState.syn) { text = `❤️ Compatibilidad entre ${lastState.syn.n1} (${lastState.syn.lp1}) y ${lastState.syn.n2} (${lastState.syn.lp2}).`; } if (text) shareSocial(type, text); }); });
+    // Los botones de IA, share, pdf ya no son necesarios aquí porque ahora están dentro del modal
     document.querySelectorAll('.spread-option').forEach(opt => opt.addEventListener('click', () => doSpread(opt.dataset.spread)));
     document.getElementById('drawThreeRunesBtn')?.addEventListener('click', drawThreeRunes);
     document.getElementById('drawFiveRunesBtn')?.addEventListener('click', drawFiveRunes);
